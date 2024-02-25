@@ -3,6 +3,8 @@ local finders = require("teletasks.lib.finders")
 local buffers = require("teletasks.lib.buffers")
 local async = require("plenary.async")
 
+local tasks_md = "tests/single_tasks_file/tasks.md"
+
 local function run_finder(finder)
 	local complete = false
 	local results = {}
@@ -38,7 +40,7 @@ describe("buffers", function()
 
 		before_each(function()
 			tasks_filename = os.tmpname()
-			local original_file = io.open("tests/single_tasks_file/tasks.md", "r")
+			local original_file = io.open(tasks_md, "r")
 			if original_file == nil then
 				error("Could not open file")
 			end
@@ -84,29 +86,69 @@ end)
 
 describe("finders", function()
 	it("Should find uncompleted tasks", function()
-		local filename = "tests/single_tasks_file/tasks.md"
-		local finder = finders.new(filename)
+		local finder = finders.new(tasks_md)
 		local results = run_finder(finder)
 
 		assert.is.same(3, #results)
 
 		assert_subset(assert, {
-			filename = "tests/single_tasks_file/tasks.md",
+			filename = tasks_md,
 			lnum = 1,
 			col = 1,
 			text = "- [ ] First task",
 		}, results[1])
 		assert_subset(assert, {
-			filename = "tests/single_tasks_file/tasks.md",
+			filename = tasks_md,
 			lnum = 3,
 			col = 5,
 			text = "    - [ ] Subtask that is a task",
 		}, results[2])
 		assert_subset(assert, {
-			filename = "tests/single_tasks_file/tasks.md",
+			filename = tasks_md,
 			lnum = 8,
 			col = 1,
 			text = "- [ ] Second task",
 		}, results[3])
+	end)
+
+	it("Should find completed tasks", function()
+		local finder = finders.new(tasks_md, { task_status = finders.task_status.completed })
+		local results = run_finder(finder)
+
+		assert.is.same(2, #results)
+
+		assert_subset(assert, {
+			filename = tasks_md,
+			lnum = 4,
+			col = 5,
+			text = "    - [x] Completed subtask",
+		}, results[1])
+		assert_subset(assert, {
+			filename = tasks_md,
+			lnum = 10,
+			col = 1,
+			text = "- [x] Completed task",
+		}, results[2])
+	end)
+
+	it("Should find cancelled tasks", function()
+		local finder = finders.new(tasks_md, { task_status = finders.task_status.cancelled })
+		local results = run_finder(finder)
+
+		assert.is.same(1, #results)
+
+		assert_subset(assert, {
+			filename = tasks_md,
+			lnum = 7,
+			col = 1,
+			text = "- [-] Cancelled task",
+		}, results[1])
+	end)
+
+	it("Should find all tasks", function()
+		local finder = finders.new(tasks_md, { task_status = finders.task_status.any })
+		local results = run_finder(finder)
+
+		assert.is.same(6, #results)
 	end)
 end)
