@@ -1,4 +1,6 @@
+require("teletasks")
 local finders = require("teletasks.lib.finders")
+local buffers = require("teletasks.lib.buffers")
 local async = require("plenary.async")
 
 local function run_finder(finder)
@@ -29,6 +31,56 @@ local function assert_subset(assert, expected, actual)
 
 	assert.is.same(expected, corresponding_from_actual)
 end
+
+describe("buffers", function()
+	describe("write_in_box_at_selection", function()
+		local tasks_filename
+
+		before_each(function()
+			tasks_filename = os.tmpname()
+			local original_file = io.open("tests/single_tasks_file/tasks.md", "r")
+			if original_file == nil then
+				error("Could not open file")
+			end
+
+			local original = original_file:read("*a")
+			original_file:close()
+
+			local tasks_file = io.open(tasks_filename, "w")
+			if tasks_file == nil then
+				error("Could not open file" .. tasks_filename)
+			end
+
+			tasks_file:write(original)
+			tasks_file:close()
+		end)
+
+		after_each(function()
+			os.remove(tasks_filename)
+		end)
+
+		it("Should write character at selection", function()
+			local selection = {
+				lnum = 1,
+				col = 1,
+				filename = tasks_filename,
+				text = "- [ ] First task",
+			}
+			local character = "x"
+			local expected_line = "- [x] First task"
+
+			local bufnr = vim.api.nvim_create_buf(false, true)
+			vim.api.nvim_buf_call(bufnr, function()
+				buffers.write_in_box_at_selection(selection, character)
+			end)
+
+			local file = io.open(tasks_filename, "r")
+			local file_first_line = file:read("*l")
+			file:close()
+			assert.is.same(expected_line, file_first_line)
+		end)
+	end)
+end)
 
 describe("finders", function()
 	it("Should find uncompleted tasks", function()
