@@ -32,8 +32,6 @@ local function tick_box_at_selection(selection)
 	vim.cmd.edit(selection.filename)
 	write_tick(0, selection.lnum, selection.col)
 	vim.cmd.write(selection.filename)
-
-	commit_finished_task(selection.text, selection.col, selection.filename)
 end
 
 TeleTasks = function(opts)
@@ -52,6 +50,7 @@ TeleTasks = function(opts)
 					local bufnr = vim.api.nvim_create_buf(false, true)
 					vim.api.nvim_buf_call(bufnr, function()
 						tick_box_at_selection(selection)
+						commit_finished_task(selection.text, selection.col, selection.filename)
 						refresh_preview(current_picker, selection, opts)
 					end)
 				end
