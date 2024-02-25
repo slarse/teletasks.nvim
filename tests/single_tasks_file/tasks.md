@@ -4,7 +4,7 @@
     - [x] Completed subtask
 
 Some unrelated text.
-
+- [-] Cancelled task
 - [ ] Second task
 
 - [x] Completed task
