@@ -1,23 +1,8 @@
 local pickers = require("telescope.pickers")
-local finders = require("telescope.finders")
 local conf = require("telescope.config").values
-local make_entry = require("telescope.make_entry")
+local finders = require("teletasks.lib.finders")
 
 local action_state = require("telescope.actions.state")
-
-local create_task_finder = function(opts)
-	return finders.new_oneshot_job(
-		vim.tbl_flatten({
-			"rg",
-			"--vimgrep",
-			"\\- \\[ \\]",
-			vim.fn.expand("%:p:h"),
-		}),
-		{
-			entry_maker = make_entry.gen_from_vimgrep(opts),
-		}
-	)
-end
 
 local function commit_finished_task(text, match_column, filename)
 	local column = match_column + string.len("- [ ] ")
@@ -39,24 +24,24 @@ end
 
 local function refresh_preview(current_picker, selection, opts)
 	write_tick(current_picker.previewer.state.bufnr, selection.lnum, selection.col)
-	local new_finder = create_task_finder(opts)
+	local new_finder = finders.new(".", opts)
 	current_picker:refresh(new_finder, opts)
 end
 
-function TickBox(selection)
+local function tick_box_at_selection(selection)
 	vim.cmd.edit(selection.filename)
 	write_tick(0, selection.lnum, selection.col)
 	vim.cmd.write(selection.filename)
 
-	--commit_finished_task(selection.text, selection.col, selection.filename)
+	commit_finished_task(selection.text, selection.col, selection.filename)
 end
 
-Tasks = function(opts)
+TeleTasks = function(opts)
 	opts = opts or {}
 	pickers
 		.new(opts, {
 			prompt_title = "Tasks",
-			finder = create_task_finder(opts),
+			finder = finders.new(".", opts),
 			previewer = conf.grep_previewer(opts),
 			sorter = conf.generic_sorter(opts),
 			attach_mappings = function(prompt_bufnr, map)
@@ -66,7 +51,7 @@ Tasks = function(opts)
 
 					local bufnr = vim.api.nvim_create_buf(false, true)
 					vim.api.nvim_buf_call(bufnr, function()
-						TickBox(selection)
+						tick_box_at_selection(selection)
 						refresh_preview(current_picker, selection, opts)
 					end)
 				end
@@ -80,5 +65,5 @@ Tasks = function(opts)
 end
 
 vim.api.nvim_create_user_command("Tasks", function()
-	Tasks(require("telescope.themes").get_dropdown({}))
+	TeleTasks(require("telescope.themes").get_dropdown({}))
 end, {})

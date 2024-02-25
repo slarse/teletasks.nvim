@@ -8,6 +8,10 @@ test_dependencies = {
 	"plenary.nvim",
 }
 
+dependencies = {
+	"telescope.nvim",
+}
+
 source = {
 	url = "git://github.com/slarse/" .. package,
 }
