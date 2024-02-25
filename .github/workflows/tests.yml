@@ -1,0 +1,31 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: main
+  schedule:
+  - cron: "0 0 * * *"
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Setup
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.1 luarocks ripgrep make
+
+          mkdir -p _neovim
+          curl -sL "https://github.com/neovim/neovim/releases/download/v0.9.5/nvim-linux64.tar.gz" | tar xzf - --strip-components=1 -C "${PWD}/_neovim"
+          export PATH="$PATH:"
+
+          make setup
+      - name: Run tests
+        run: |
+          export PATH="${PWD}/_neovim/bin:${PATH}"
+          export VIM="${PWD}/_neovim/share/nvim/runtime"
+          nvim --version
+          make test
