@@ -5,16 +5,16 @@ local buffers = require("teletasks.lib.buffers")
 
 local action_state = require("telescope.actions.state")
 
-local function commit_finished_task(text, match_column, filename)
+local function commit_task_state_change(commit_prefix, text, match_column, filename)
 	local column = match_column + string.len("- [ ] ")
 
-	local sanitized_text = string.sub(string.gsub(text, "'", ""), column, -1)
-	if string.len(sanitized_text) > 35 then
-		sanitized_text = string.sub(sanitized_text, 0, 35) .. "..."
+	local sanitized_text = commit_prefix .. ": " .. string.sub(string.gsub(text, "'", ""), column, -1)
+	if string.len(sanitized_text) > 52 then
+		sanitized_text = string.sub(sanitized_text, 0, 52 - 3) .. "..."
 	end
 
 	vim.api.nvim_command("!git add " .. filename)
-	vim.api.nvim_command("!git commit -m 'Finish task: " .. sanitized_text .. "' " .. filename)
+	vim.api.nvim_command("!git commit -m '" .. sanitized_text .. "' " .. filename)
 end
 
 local function refresh_preview(current_picker, selection, opts)
@@ -32,23 +32,23 @@ TeleTasks = function(opts)
 			previewer = conf.grep_previewer(opts),
 			sorter = conf.generic_sorter(opts),
 			attach_mappings = function(prompt_bufnr, map)
-				local function mark(character)
+				local function mark(checkbox_character, commit_prefix)
 					local selection = action_state.get_selected_entry()
 					local current_picker = action_state.get_current_picker(prompt_bufnr)
 
 					local bufnr = vim.api.nvim_create_buf(false, true)
 					vim.api.nvim_buf_call(bufnr, function()
-						buffers.write_in_box_at_selection(selection, character)
-						commit_finished_task(selection.text, selection.col, selection.filename)
+						buffers.write_in_box_at_selection(selection, checkbox_character)
+						commit_task_state_change(commit_prefix, selection.text, selection.col, selection.filename)
 						refresh_preview(current_picker, selection, opts)
 					end)
 				end
 
 				local function finish_task()
-					mark("x")
+					mark("x", "Finish task")
 				end
 				local function cancel_task()
-					mark("-")
+					mark("-", "Cancel task")
 				end
 
 				map("i", "<c-x>", finish_task)
