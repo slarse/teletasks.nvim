@@ -43,6 +43,14 @@ local function refresh_preview(current_picker, selection, opts)
 	current_picker:refresh(new_finder, opts)
 end
 
+function TickBox(selection)
+	vim.cmd.edit(selection.filename)
+	write_tick(0, selection.lnum, selection.col)
+	vim.cmd.write(selection.filename)
+
+	--commit_finished_task(selection.text, selection.col, selection.filename)
+end
+
 Tasks = function(opts)
 	opts = opts or {}
 	pickers
@@ -58,12 +66,7 @@ Tasks = function(opts)
 
 					local bufnr = vim.api.nvim_create_buf(false, true)
 					vim.api.nvim_buf_call(bufnr, function()
-						vim.cmd.edit(selection.filename)
-						write_tick(0, selection.lnum, selection.col)
-						vim.cmd.write(selection.filename)
-
-						commit_finished_task(selection.text, selection.col, selection.filename)
-
+						TickBox(selection)
 						refresh_preview(current_picker, selection, opts)
 					end)
 				end
